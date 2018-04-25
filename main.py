@@ -1,5 +1,6 @@
 import spidev
 import time
+import sys
 
 # for a C++ example use below link:
 # http://wiki.dragino.com/index.php?title=Use_Lora/GPS_HAT_%2B_RaspberryPi_to_set_up_a_Lora_Node
@@ -8,16 +9,32 @@ import time
 
 spi = spidev.SpiDev()
 spi.open(0, 0)
-spi.max_speed_hz = 7629
+#spi.max_speed_hz = 7629
 
-def write_pot(input):
-    msb = input >> 8
-    lsb = input & 0xFF
-    spi.xfer([msb, lsb])
+def buildReadCommand(channel):
+	startBit = 0x01
+	singleEnded = 0x08
 
-while true:
-    write_pot(0x1FF)
-    time.sleep(0.5)
-    write_pot(0x00)
-    time.sleep(0.5)
-    
+	return []
+
+def processAdcValue(result):
+	pass
+
+def readAdc(channel):
+	if ((channel > 7) or (channel < 0)):
+		return -1
+
+	r = spi.xfer(buildReadCommand(channel))
+	return processAdcValue(r)
+
+if __name__ == '__main__':
+	try:
+		while True:
+			val = readAdc(0)
+			print ("ADC Result: ", str(val))
+			time.sleep(5)
+	except KeyboardInterrupt as err:
+		spi.close()
+		sys.exit(0)
+
+
