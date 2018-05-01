@@ -9,8 +9,12 @@ import sys
 
 spi = spidev.SpiDev()
 spi.open(0, 0)
+to_send = [0x01, 0x02, 0x03]
 #spi.max_speed_hz = 7629
 
+spu.xfer(to_send)
+
+'''
 def buildReadCommand(channel):
 	startBit = 0x01
 	singleEnded = 0x08
@@ -37,4 +41,4 @@ if __name__ == '__main__':
 		spi.close()
 		sys.exit(0)
 
-
+'''
