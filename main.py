@@ -7,12 +7,17 @@ import sys
 # maybe should change it to code in C++ instead since all the examples are in C++.
 # https://www.hackster.io/idreams/getting-started-with-lora-fd69d1 
 
+print("Start Master Module")
+
 spi = spidev.SpiDev()
 spi.open(0, 0)
 to_send = [0x01, 0x02, 0x03]
 #spi.max_speed_hz = 7629
 
-spu.xfer(to_send)
+print("Sending Data")
+spi.xfer(to_send)
+
+Print("Send")
 
 '''
 def buildReadCommand(channel):
