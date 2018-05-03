@@ -1,49 +1,131 @@
-import spidev
 import time
 import sys
-
-# for a C++ example use below link:
-# http://wiki.dragino.com/index.php?title=Use_Lora/GPS_HAT_%2B_RaspberryPi_to_set_up_a_Lora_Node
-# maybe should change it to code in C++ instead since all the examples are in C++.
-# https://www.hackster.io/idreams/getting-started-with-lora-fd69d1 
+from SX127x.LoRa import *
+from SX127x.board_config import BOARD
 
 print("Start Master Module")
 
-spi = spidev.SpiDev()
-spi.open(0, 0)
-to_send = [0x01, 0x02, 0x03]
-#spi.max_speed_hz = 7629
+BOARD.DIO0 = 4
+BOARD.DIO3 = 1
+#BOARD.DIO3 = 26
+BOARD.SWITCH = 21
+BOARD.setup()
 
-print("Sending Data")
-spi.xfer(to_send)
 
-Print("Send")
+class LoRaMaster(LoRa):
+	def __init(self):
+		super(LoRaRcvCont, self).__init__(verbose)
+		self.set_mode(MODE.STDBY)
+		#self.set_dio_mapping([0] * 6)
 
-'''
-def buildReadCommand(channel):
-	startBit = 0x01
-	singleEnded = 0x08
+	def on_rx_done(self):
+		BOARD.led_on()
+		print("\nRxDone")
+		self.clear_irq_flags(RxDone=1)
+		payload = self.read_payload(nocheck=True)
+		#print(bytes(payload).decode())
+		print(bytes(payload).hex())
+		#print(payload)
+		self.set_mode(MODE.SLEEP)
+		self.reset_ptr_rx()
+		BOARD.led_off()
+		self.set_mode(MODE.RXCONT)
+		#self.set_mode(MODE.RXSINGLE)
+		#self.set_mode(MODE.FSRX)
 
-	return []
+	def on_txdone(self):
+		print("\nTxDone")
+		print(self.get_irq_flags())
 
-def processAdcValue(result):
-	pass
+	def on_cad_done(self):
+		print("\non_CadDone")
+		print(self.get_irq_flags())
 
-def readAdc(channel):
-	if ((channel > 7) or (channel < 0)):
-		return -1
+	def on_rx_timeout(self):
+		print("\non_RxTimeout")
+		print(self.get_irq_flags())
+		time.sleep(.5)
+		self.set_mode(MODE.SLEEP)
+		self.reset_ptr_rx()
+		self.set_mode(MODE.RXCONT)
+		#self.set_mode(MODE.RXSINGLE)
+		#self.set_mode(MODE.FSRX)
 
-	r = spi.xfer(buildReadCommand(channel))
-	return processAdcValue(r)
+	def on_valid_header(self):
+		print("\non_ValidHeader")
+		print(self.get_irq_flags())
 
-if __name__ == '__main__':
-	try:
+	def on_payload_crc_error(self):
+		print("\non_PayloadCrcError")
+		print(self.get_irq_flags())
+
+	def on_fhss_change_channel(self):
+		print("\non_Fhss_changeChannel")
+		print(self.get_irq_flags())
+
+	def start(self):
+		self.reset_ptr_rx()
+		self.set_mode(MODE.RXCONT)
+		#self.set_mode(MODE.RXSINGLE)
+		#self.set_mode(MODE.FSRX)
+		#print(self.get_irq_flags())
 		while True:
-			val = readAdc(0)
-			print ("ADC Result: ", str(val))
-			time.sleep(5)
-	except KeyboardInterrupt as err:
-		spi.close()
-		sys.exit(0)
+			time.sleep(.5)
+			rssi_value = self.get_rssi_value()
+			snr_value = self.get_pkt_snr_value()
+			status = self.get_modem_status()
+			sys.stdout.flush()
+			sys.stdout.write("\r%d %d %d %d" % (rssi_value, snr_value, status['rx_ongoing'], status['modem_clear']))
 
-'''
+lora = LoRaMaster()
+
+try:
+	#lora = LoRa(verbose=False, do_calibration=False)
+	lora.set_mode(MODE.STDBY)
+
+	lora.set_freq(868.1)
+	lora.set_coding_rate(CODING_RATE.CR4_5)
+	lora.set_bw(BW.BW125)
+	lora.set_spreading_factor(12)
+	lora.set_pa_config(output_power=5)
+	lora.set_preamble(12)
+	lora.set_rx_crc(0)
+	lora.set_implicit_header_mode(0)
+	#lora.set_max_payload_length(100)
+	#lora.set_invert_iq(0)
+
+	time.sleep(2)
+except:
+	print("Error in setup")
+	print("Closing")
+	BOARD.teardown()
+	print("END")
+
+print("Version: \t{}".format(lora.get_version()))
+print("Frequency: \t{}MHz".format(lora.get_freq()))
+print("Modem Config 1: {}".format(lora.get_modem_config_1()))
+print("Modem Config 2: {}".format(lora.get_modem_config_2()))
+print("PA Config: \t{}".format(lora.get_pa_config()))
+
+#lora.set_mode(MODE.RXSINGLE)
+
+print(lora)
+assert(lora.get_agc_auto_on() == 1)
+
+# Start Listening
+
+try:
+	lora.start()
+except KeyboardInterrupt:
+	sys.stdout.flush()
+	print("")
+	sys.stderr.write("KeyboardInterrupt\n")
+finally:
+	sys.stdout.flush()
+	print("")
+	lora.set_mode(MODE.SLEEP)
+	print(lora)
+	BOARD.teardown()
+
+#BOARD.teardown()
+#print("END")
