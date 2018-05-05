@@ -2,6 +2,7 @@ import time
 import sys
 from SX127x.LoRa import *
 from SX127x.board_config import BOARD
+from weather_master import PackageReader
 
 print("Start Master Module")
 
@@ -10,6 +11,8 @@ BOARD.DIO3 = 1
 #BOARD.DIO3 = 26
 BOARD.SWITCH = 21
 BOARD.setup()
+
+reader = PackageReader()
 
 
 class LoRaMaster(LoRa):
@@ -23,10 +26,15 @@ class LoRaMaster(LoRa):
 		print("\nRxDone")
 		self.clear_irq_flags(RxDone=1)
 		payload = self.read_payload(nocheck=True)
-		#print(bytes(payload).decode())
 		print(bytes(payload).hex())
-		#print(payload)
+#		self.print_payload(payload)
+
+		reader.read_package(payload, True)
+		print("Accepted payload: ", reader.is_accepted())
+
 		self.set_mode(MODE.SLEEP)
+
+		print(lora.get_dio_mapping())
 		self.reset_ptr_rx()
 		BOARD.led_off()
 		self.set_mode(MODE.RXCONT)
@@ -63,6 +71,20 @@ class LoRaMaster(LoRa):
 		print("\non_Fhss_changeChannel")
 		print(self.get_irq_flags())
 
+	def print_payload(self, payload):
+		chex_sum = payload[0]
+		cmd = payload[1]
+
+		print("chex_sum: \t{}".format(chex_sum))
+		print("payload len: \t{}".format(len(payload)))
+
+		if (chex_sum == len(payload)):
+			print("payload of correct length")
+		else:
+			print("payload of incorrect length")
+		print("command: \t{}".format(cmd))
+
+
 	def start(self):
 		self.reset_ptr_rx()
 		self.set_mode(MODE.RXCONT)
@@ -83,15 +105,16 @@ try:
 	#lora = LoRa(verbose=False, do_calibration=False)
 	lora.set_mode(MODE.STDBY)
 
-	lora.set_freq(868.1)
+#	lora.set_freq(868.0)
+	lora.set_freq(868.25)
 	lora.set_coding_rate(CODING_RATE.CR4_5)
 	lora.set_bw(BW.BW125)
-	lora.set_spreading_factor(12)
+	lora.set_spreading_factor(9)
 	lora.set_pa_config(output_power=5)
 	lora.set_preamble(12)
 	lora.set_rx_crc(0)
 	lora.set_implicit_header_mode(0)
-	#lora.set_max_payload_length(100)
+	lora.set_max_payload_length(250)
 	#lora.set_invert_iq(0)
 
 	time.sleep(2)
@@ -110,7 +133,7 @@ print("PA Config: \t{}".format(lora.get_pa_config()))
 #lora.set_mode(MODE.RXSINGLE)
 
 print(lora)
-assert(lora.get_agc_auto_on() == 1)
+#assert(lora.get_agc_auto_on() == 1)
 
 # Start Listening
 
