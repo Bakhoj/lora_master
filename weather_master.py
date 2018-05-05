@@ -16,7 +16,7 @@ class PackageReader():
 			print("command: \t", self.cmd)
 
 	def read_package_async(self, payload):
-		self.read_package(self, payload, verbose = False)
+		self.read_package(payload, verbose=False)
 		pass
 
 	def is_accepted(self):
