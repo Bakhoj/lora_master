@@ -1,3 +1,5 @@
+from simple_time import SimpleTime
+
 class PackageReader():
 	def __init__(self):
 		self.chex_sum = 0
@@ -66,9 +68,26 @@ class PackageReader():
 
 	def __cmd_sensor_data(self):
 		if(self.verbose):
-			print("Sensor Data command")
+			print("\n==================================")
+			print("\tSensor Data command")
+		self.__record_station_id()
+		self.__record_time_id()
 		self.__check_available_sensors()
 		self.__record_sensor_data()
+
+		if(self.verbose):
+			print("==================================\n\n")
+
+	def __record_station_id(self):
+		self.station_id = (self.data[2] << 8)+ self.data[3]
+		if(self.verbose):
+			print("Local Station Identification: \t", self.station_id)
+
+	def __record_time_id(self):
+		self.time = SimpleTime()
+		self.time.byte_to_time(self.data[4], self.data[5])
+		if(self.verbose):
+			print("Local Times Identification: \t{}:{}:{}".format(self.time.day, self.time.hour, self.time.minute))
 
 	def __check_available_sensors(self):
 		"""
@@ -86,31 +105,36 @@ class PackageReader():
 		self.has_air_hum = self.__bit_check(sensor_byte_one)(3)
 		
 		if(self.verbose):
-			print("Has battery level: ", self.has_bat_lvl)
-			print("Has air temperature: ", self.has_air_temp)
-			print("Has air humidity: ", self.has_air_hum)
+			print("Has battery level: \t", self.has_bat_lvl)
+			print("Has air temperature: \t", self.has_air_temp)
+			print("Has air humidity: \t", self.has_air_hum)
 
 	def __record_sensor_data(self):
 		verbose = self.verbose
+		# 1. Battery level
 		if self.has_bat_lvl: 
 			self.bat_lvl = self.data[self.inc()]
 			if verbose:
-				print("Battery level: ", self.bat_lvl)
+				print("Battery level: \t\t", self.bat_lvl)
 
+		# 5. Air Temperature
 		if self.has_air_temp: 
 			self.air_temp = self.data[self.inc()]
 			if verbose:
-				print("Air temperature: ", self.air_temp)
+				print("Air temperature: \t", self.air_temp)
 
+		# 6. Air Humidity
 		if self.has_air_hum: 
 			self.air_hum = self.data[self.inc()]
 			if verbose:
-				print("Air humidity", self.air_hum)
+				print("Air humidity: \t\t", self.air_hum)
 
 
 	def __invalid_command(self):
 		if(self.verbose):
-			print("Invalid command")
+			print("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+			print("\tInvalid command")
+			print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n")
 
 	def __bit_check(self, x): 
 		""" 
