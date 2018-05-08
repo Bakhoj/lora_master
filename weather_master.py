@@ -1,5 +1,9 @@
 from simple_time import SimpleTime
 
+"""
+Time to connect the Module to the DB http://www.fhilitski.com/2016/11/temperature-sensor-with-raspberry-pi-3-and-aws/ 
+"""
+
 class PackageReader():
 	def __init__(self):
 		self.chex_sum = 0
@@ -17,12 +21,14 @@ class PackageReader():
 		self.accepted_package = self.chex_sum == len(payload)
 
 		if(self.verbose):
+			print("\n==================================")
 			print("chex_sum: \t", self.chex_sum)
 			print("command: \t", self.cmd)
 
 		if(self.accepted_package == False):
 			if(self.verbose):
 				print("Package not accepted")
+				print("==================================\n")
 			return
 		
 		self.__cmd_lookup(self.cmd)
@@ -76,7 +82,7 @@ class PackageReader():
 		self.__record_sensor_data()
 
 		if(self.verbose):
-			print("==================================\n\n")
+			print("==================================\n")
 
 	def __record_station_id(self):
 		self.station_id = (self.data[2] << 8)+ self.data[3]

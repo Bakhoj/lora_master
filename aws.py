@@ -2,7 +2,8 @@ import time
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 
 
-host = "/project/deviceSDK/public_key.pem.key"
+#host = "/project/deviceSDK/public_key.pem.key"
+host = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAz1P0zoL65wG9IF80+opBTNTXPQKN8fqFAyFeGiBA2oCzK+GYojr1lcjKYSV5GmcmCCV4bGi9R9SxzVHcxtse+1KEDL6zQzPg4YBNTUBBemq/XZy0MsB81UdmcoauQBSqSXXiYP67QNlYNeSrQtIOA31I67VP71/xyeDlBlVj3xOOagTVGk4oDAmfHF9n7u/DJZ0sLprgAj5u4pyL1E2w+UFnVOZy918h7InoRm9yqidllLfvzz5l+6KM5keBmmQxAerJwpxeF79xpGuiNJ/FIGv+asDO3NvbXb0XWpmYMy8fqsPRMLEYZcYw3ViNNrWB5H6NIGpaQWwbFx3P21G/cwIDAQAB"
 rootCAPath = "/project/deviceSDK/root_CA.pem"
 privateKeyPath = "/project/deviceSDK/certificate.pem.crt"
 certificatePath = "/project/deviceSDK/private_key.pem.key"
