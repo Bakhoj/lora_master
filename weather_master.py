@@ -1,23 +1,25 @@
 from simple_time import SimpleTime
+from data_pack import DataPack
 
 """
 Time to connect the Module to the DB http://www.fhilitski.com/2016/11/temperature-sensor-with-raspberry-pi-3-and-aws/ 
 """
 
+
 class PackageReader():
 	def __init__(self):
-		self.chex_sum = 0
 		pass
 
 	def read_package(self, payload, verbose = False):
 		if(type(payload) is not list):
 			print("Wrong payload type")
 			return
+		self.data_pack = DataPack()
 		self.verbose = verbose
 		self.index = 0
-		self.data = payload
-		self.chex_sum = self.data[self.inc()]
-		self.cmd = self.data[self.inc()]
+		self.payload = payload
+		self.chex_sum = self.payload[self.inc()]
+		self.cmd = self.payload[self.inc()]
 		self.accepted_package = self.chex_sum == len(payload)
 
 		if(self.verbose):
@@ -35,7 +37,6 @@ class PackageReader():
 
 	def read_package_async(self, payload):
 		self.read_package(payload, verbose=False)
-		pass
 
 	def is_accepted(self):
 		return self.accepted_package
@@ -85,15 +86,14 @@ class PackageReader():
 			print("==================================\n")
 
 	def __record_station_id(self):
-		self.station_id = (self.data[2] << 8)+ self.data[3]
+		self.data_pack.station_id = (self.payload[2] << 8)+ self.payload[3]
 		if(self.verbose):
-			print("Local Station Identification: \t", self.station_id)
+			print("Local Station Identification: \t", self.data_pack.station_id)
 
 	def __record_time_id(self):
-		self.time = SimpleTime()
-		self.time.byte_to_time(self.data[4], self.data[5])
+		self.data_pack.time.byte_to_time(self.payload[4], self.payload[5])
 		if(self.verbose):
-			print("Local Times Identification: \t{}:{}:{}".format(self.time.day, self.time.hour, self.time.minute))
+			print("Local Times Identification: \t{}:{}:{}".format(self.data_pack.time.day, self.data_pack.time.hour, self.data_pack.time.minute))
 
 	def __check_available_sensors(self):
 		"""
@@ -101,39 +101,39 @@ class PackageReader():
 		and set the self.index to 8 and makes it ready for __record_sensor_data.
 		self.verbose will print sensors availability.
 		"""
-		sensor_byte_one = self.data[6]
-		sensor_byte_two = self.data[7]
+		sensor_byte_one = self.payload[6]
+		sensor_byte_two = self.payload[7]
 		self.index = 8
 
-		self.has_bat_lvl = self.__bit_check(sensor_byte_one)(8)
+		self.data_pack.has_bat_lvl = self.__bit_check(sensor_byte_one)(8)
 
-		self.has_air_temp = self.__bit_check(sensor_byte_one)(4)
-		self.has_air_hum = self.__bit_check(sensor_byte_one)(3)
+		self.data_pack.has_air_temp = self.__bit_check(sensor_byte_one)(4)
+		self.data_pack.has_air_hum = self.__bit_check(sensor_byte_one)(3)
 		
 		if(self.verbose):
-			print("Has battery level: \t", self.has_bat_lvl)
-			print("Has air temperature: \t", self.has_air_temp)
-			print("Has air humidity: \t", self.has_air_hum)
+			print("Has battery level: \t", self.data_pack.has_bat_lvl)
+			print("Has air temperature: \t", self.data_pack.has_air_temp)
+			print("Has air humidity: \t", self.data_pack.has_air_hum)
 
 	def __record_sensor_data(self):
 		verbose = self.verbose
 		# 1. Battery level
-		if self.has_bat_lvl: 
-			self.bat_lvl = self.data[self.inc()]
+		if self.data_pack.has_bat_lvl: 
+			self.data_pack.bat_lvl = self.payload[self.inc()]
 			if verbose:
-				print("Battery level: \t\t", self.bat_lvl)
+				print("Battery level: \t\t", self.data_pack.bat_lvl)
 
 		# 5. Air Temperature
-		if self.has_air_temp: 
-			self.air_temp = self.data[self.inc()]
+		if self.data_pack.has_air_temp: 
+			self.data_pack.air_temp = self.payload[self.inc()]
 			if verbose:
-				print("Air temperature: \t", self.air_temp)
+				print("Air temperature: \t", self.data_pack.air_temp)
 
 		# 6. Air Humidity
-		if self.has_air_hum: 
-			self.air_hum = self.data[self.inc()]
+		if self.data_pack.has_air_hum: 
+			self.data_pack.air_hum = self.payload[self.inc()]
 			if verbose:
-				print("Air humidity: \t\t", self.air_hum)
+				print("Air humidity: \t\t", self.data_pack.air_hum)
 
 
 	def __invalid_command(self):
@@ -152,9 +152,3 @@ class PackageReader():
 	def inc(self):
 		self.index += 1
 		return self.index - 1
-
-			
-
-
-
-
