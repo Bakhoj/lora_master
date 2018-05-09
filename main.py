@@ -3,6 +3,7 @@ import sys
 from SX127x.LoRa import *
 from SX127x.board_config import BOARD
 from weather_master import PackageReader
+from aws import AWS
 
 print("Start Master Module")
 
@@ -20,26 +21,22 @@ class LoRaMaster(LoRa):
 		super(LoRaRcvCont, self).__init__(verbose)
 		self.set_mode(MODE.STDBY)
 		#self.set_dio_mapping([0] * 6)
+		self.db = AWS()
 
 	def on_rx_done(self):
 		BOARD.led_on()
-		print("\nRxDone")
-		self.clear_irq_flags(RxDone=1)
-		payload = self.read_payload(nocheck=True)
-		print(bytes(payload).hex())
-#		self.print_payload(payload)
 
-		reader.read_package(payload, True)
-		print("Accepted payload: ", reader.is_accepted())
+		self.clear_irq_flags(RxDone=1)
+		reader.read_package(self.read_payload(nocheck=True))
 
 		self.set_mode(MODE.SLEEP)
 
-		print(lora.get_dio_mapping())
 		self.reset_ptr_rx()
 		BOARD.led_off()
 		self.set_mode(MODE.RXCONT)
-		#self.set_mode(MODE.RXSINGLE)
-		#self.set_mode(MODE.FSRX)
+		
+		self.db.publish_sensor_data(reader.data_pack, True)
+
 
 	def on_txdone(self):
 		print("\nTxDone")
@@ -56,8 +53,6 @@ class LoRaMaster(LoRa):
 		self.set_mode(MODE.SLEEP)
 		self.reset_ptr_rx()
 		self.set_mode(MODE.RXCONT)
-		#self.set_mode(MODE.RXSINGLE)
-		#self.set_mode(MODE.FSRX)
 
 	def on_valid_header(self):
 		print("\non_ValidHeader")
@@ -88,9 +83,8 @@ class LoRaMaster(LoRa):
 	def start(self):
 		self.reset_ptr_rx()
 		self.set_mode(MODE.RXCONT)
-		#self.set_mode(MODE.RXSINGLE)
-		#self.set_mode(MODE.FSRX)
-		#print(self.get_irq_flags())
+		self.db.connect()
+		
 		while True:
 			time.sleep(.5)
 			rssi_value = self.get_rssi_value()
@@ -124,15 +118,15 @@ except:
 	BOARD.teardown()
 	print("END")
 
-print("Version: \t{}".format(lora.get_version()))
-print("Frequency: \t{}MHz".format(lora.get_freq()))
-print("Modem Config 1: {}".format(lora.get_modem_config_1()))
-print("Modem Config 2: {}".format(lora.get_modem_config_2()))
-print("PA Config: \t{}".format(lora.get_pa_config()))
+#print("Version: \t{}".format(lora.get_version()))
+#print("Frequency: \t{}MHz".format(lora.get_freq()))
+#print("Modem Config 1: {}".format(lora.get_modem_config_1()))
+#print("Modem Config 2: {}".format(lora.get_modem_config_2()))
+#print("PA Config: \t{}".format(lora.get_pa_config()))
 
 #lora.set_mode(MODE.RXSINGLE)
 
-print(lora)
+#print(lora)
 #assert(lora.get_agc_auto_on() == 1)
 
 # Start Listening
@@ -149,6 +143,7 @@ finally:
 	lora.set_mode(MODE.SLEEP)
 	print(lora)
 	BOARD.teardown()
+	lora.db.disconnect()
 
 #BOARD.teardown()
 #print("END")
