@@ -1,65 +1,57 @@
 import time
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 from random import randint
-
-
-#host = "/project/deviceSDK/public_key.pem.key"
-#host = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAz1P0zoL65wG9IF80+opBTNTXPQKN8fqFAyFeGiBA2oCzK+GYojr1lcjKYSV5GmcmCCV4bGi9R9SxzVHcxtse+1KEDL6zQzPg4YBNTUBBemq/XZy0MsB81UdmcoauQBSqSXXiYP67QNlYNeSrQtIOA31I67VP71/xyeDlBlVj3xOOagTVGk4oDAmfHF9n7u/DJZ0sLprgAj5u4pyL1E2w+UFnVOZy918h7InoRm9yqidllLfvzz5l+6KM5keBmmQxAerJwpxeF79xpGuiNJ/FIGv+asDO3NvbXb0XWpmYMy8fqsPRMLEYZcYw3ViNNrWB5H6NIGpaQWwbFx3P21G/cwIDAQAB"
-host = "a3867rpfz9hgy1.iot.eu-central-1.amazonaws.com"
-rootCAPath = "/project/deviceSDK/root_CA.pem"
-privateKeyPath = "/project/deviceSDK/private_key.pem.key"
-certificatePath = "/project/deviceSDK/certificate.pem.crt"
-
-
-delay_s = 30
-sensor_sn = '00000001'
-topic = 'RaspPiTest_01/'+sensor_sn
-
-loopCount = 1
-
-myMQTTClient = None
-
-try:
-
-#	myMQTTClient = AWSIoTMQTTClient("RasPiTest_01", useWebsocket=True)
-#	myMQTTClient.configureEndpoint(host, 443)
-#	myMQTTClient.configureCredentials(rootCAPath)
-	print("Creating Client")
-	myMQTTClient = AWSIoTMQTTClient("RaspPiTest_01")
-	myMQTTClient.configureEndpoint(host, 8883)
-	myMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
-
-#	myMQTTClient.configureAutoReconnectBackoffTime(1, 32, 20)
-	myMQTTClient.configureOfflinePublishQueueing(-1)
-	myMQTTClient.configureDrainingFrequency(2)
-	myMQTTClient.configureConnectDisconnectTimeout(10)
-	myMQTTClient.configureMQTTOperationTimeout(5)
-	print("Connecting... ")
-	myMQTTClient.connect()
-	print("connected")
-	time.sleep(2)
+from data_pack import DataPack
+#from simple_time import SimpleTime
 
 
 
+class AWS():
+	__host = "a3867rpfz9hgy1.iot.eu-central-1.amazonaws.com"
+	__rootCAPath = "deviceSDK/root_CA.pem"
+	__privateKeyPath = "deviceSDK/private_key.pem.key"
+	__certificatePath = "deviceSDK/certificate.pem.crt"
 
-	#timestamp = datetime.datetime.now()
-	#print(" Time: {} \n".format(timestamp))
-	while True:
-		temperature = randint(8, 32)
-		timestamp = time.time()
-#		dataID = "MS_" + timestamp + "_" + topic + "_something"
-		dataID = "MS_{}_{}_something".format(timestamp, topic)
+	def __init__(self):
+		self.client = None
+		self.master_id = '123456783245'
 
-		msg = '"dataID": "{:s}", "device": "{:s}", "airTemperatur": "{}", "timestamp": "{}"'.format(dataID, sensor_sn, temperature, timestamp)
+	def connect(self, verbose = False):
+		if verbose:
+			print("Connecting...")
+		try:
+			self.client = AWSIoTMQTTClient("RaspPiTest_01")
+			self.client.configureEndpoint(AWS.__host, 8883)
+			self.client.configureCredentials(AWS.__rootCAPath, AWS.__privateKeyPath, AWS.__certificatePath)
+			#self.client.configureAutoReconnectBackoffTime(1, 32, 20)
+			self.client.configureOfflinePublishQueueing(-1)
+			self.client.configureDrainingFrequency(2)
+			self.client.configureConnectDisconnectTimeout(10)
+			self.client.configureMQTTOperationTimeout(5)
+			self.client.connect()
+			time.sleep(2)
+		except Exception:
+			if verbose:
+				print("Connection failed")
+
+	def publish_sensor_data(self, data_pack: DataPack, verbose = False):
+		#timestamp = time.time()
+
+		topic = 'RaspPiTest_01/sensor_data'
+		dataID = "SD_{}_{}_{}".format(data_pack.time.to_float_time(), self.master_id, data_pack.station_id)
+
+		msg = '"dataID": "{:s}", "timestamp": "{}", "stationID": "{}", "masterID": "{}"'.format(dataID, data_pack.time.to_float_time(), data_pack.station_id, self.master_id)
+
+		data_pack.buildDict()
+		for key, value in data_pack.dict.items():
+			msg += ', "{:s}": "{}"'.format(key, value)
 		msg = '{'+msg+'}'
 
-		myMQTTClient.publish(topic, msg, 1)
-		loopCount += 1
-		print('Sleeping...')
-		time.sleep(delay_s)
-except KeyboardInterrupt:
-	pass
+		if verbose: print("Sending Data...")
 
-print('Exiting the loop');
-myMQTTClient.disconnect()
-print('Disconnected from AWS')
+		self.client.publish(topic, msg, 1)
+
+		if verbose: print("Data send")
+
+	def disconnect(self, verbose = False):
+		self.client.disconnect()
