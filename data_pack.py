@@ -11,10 +11,12 @@ class DataPack():
         self.has_bat_lvl = False
         self.has_air_temp = False
         self.has_air_hum = False
+        self.has_air_pres = False
 
         self.bat_lvl = None
         self.air_temp = None
         self.air_hum = None
+        self.air_pres = None
 
         self.dict = None
     
@@ -26,5 +28,5 @@ class DataPack():
             self.dict["airTemperatur"] = self.air_temp
         if self.has_air_hum:
             self.dict["airHumidity"] = self.air_hum
-
-    
+        if self.has_air_pres:
+            self.dict["airPressure"] = self.air_pres

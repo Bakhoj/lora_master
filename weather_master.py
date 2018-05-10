@@ -109,11 +109,13 @@ class PackageReader():
 
 		self.data_pack.has_air_temp = self.__bit_check(sensor_byte_one)(4)
 		self.data_pack.has_air_hum = self.__bit_check(sensor_byte_one)(3)
+		self.data_pack.has_air_pres = self.__bit_check(sensor_byte_one)(2)
 		
 		if(self.verbose):
 			print("Has battery level: \t", self.data_pack.has_bat_lvl)
 			print("Has air temperature: \t", self.data_pack.has_air_temp)
 			print("Has air humidity: \t", self.data_pack.has_air_hum)
+			print("Has air Pressure: \t", self.data_pack.has_air_pres)
 
 	def __record_sensor_data(self):
 		verbose = self.verbose
@@ -124,16 +126,29 @@ class PackageReader():
 				print("Battery level: \t\t", self.data_pack.bat_lvl)
 
 		# 5. Air Temperature
-		if self.data_pack.has_air_temp: 
-			self.data_pack.air_temp = self.payload[self.inc()]
+		if self.data_pack.has_air_temp:
+			num = self.payload[self.inc()]
+			decimal = self.payload[self.inc()] / 100
+
+			self.data_pack.air_temp = num + decimal
 			if verbose:
 				print("Air temperature: \t", self.data_pack.air_temp)
 
 		# 6. Air Humidity
-		if self.data_pack.has_air_hum: 
-			self.data_pack.air_hum = self.payload[self.inc()]
+		if self.data_pack.has_air_hum:
+			num = self.payload[self.inc()]
+			decimal = self.payload[self.inc()] / 100
+			self.data_pack.air_hum = num + decimal
 			if verbose:
 				print("Air humidity: \t\t", self.data_pack.air_hum)
+
+		if self.data_pack.has_air_pres:
+			num1 = self.payload[self.inc()] << 16
+			num2 = self.payload[self.inc()] << 8
+			num3 = self.payload[self.inc()]
+			self.data_pack.air_pres = num1 + num2 + num3
+			if verbose:
+				print("Air pressure: \t\t", self.data_pack.air_pres)
 
 
 	def __invalid_command(self):
