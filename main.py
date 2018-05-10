@@ -81,6 +81,7 @@ class LoRaMaster(LoRa):
 
 
 	def start(self):
+		self.db = AWS()
 		self.reset_ptr_rx()
 		self.set_mode(MODE.RXCONT)
 		self.db.connect()
