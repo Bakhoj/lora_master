@@ -34,8 +34,11 @@ class LoRaMaster(LoRa):
 		self.reset_ptr_rx()
 		BOARD.led_off()
 		self.set_mode(MODE.RXCONT)
-		
-		self.db.publish_sensor_data(reader.data_pack, True)
+
+		if(reader.is_accepted):
+			self.db.connect()
+			self.db.publish_sensor_data(reader.data_pack, True)
+			self.db.disconnect()
 
 
 	def on_txdone(self):
@@ -84,7 +87,6 @@ class LoRaMaster(LoRa):
 		self.db = AWS()
 		self.reset_ptr_rx()
 		self.set_mode(MODE.RXCONT)
-		self.db.connect()
 		
 		while True:
 			time.sleep(.5)
