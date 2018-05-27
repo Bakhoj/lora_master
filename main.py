@@ -27,7 +27,7 @@ class LoRaMaster(LoRa):
 		BOARD.led_on()
 
 		self.clear_irq_flags(RxDone=1)
-		reader.read_package(self.read_payload(nocheck=True))
+		reader.read_package(self.read_payload(nocheck=True), True)
 
 		self.set_mode(MODE.SLEEP)
 
